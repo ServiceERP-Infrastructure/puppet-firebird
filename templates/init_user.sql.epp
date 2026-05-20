@@ -1,0 +1,6 @@
+<%- |
+String $initial_password,
+| -%>
+
+CREATE OR ALTER USER SYSDBA password '<%= $initial_password %>';
+COMMIT;
