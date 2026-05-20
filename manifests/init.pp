@@ -1,7 +1,7 @@
 class firebird(
   Boolean $install_dbeaver = false,
   Hash[String, Firebird::FirebirdSource] $version_sources = {},
-  Array[Firebird::FirebirdInstance] $instances = [],
+  Hash[String, Firebird::FirebirdInstance] $instances = [],
 ) {
   if ($install_dbeaver) {
     if $facts['os']['name'] == 'windows' {
@@ -20,10 +20,15 @@ class firebird(
       ensure => present,
       gid    => 'firebird',
     }
+    file { '/opt/firebird_installer':
+      ensure => directory,
+      owner  => 'firebird',
+      group  => 'firebird',
+    }
   }
 
-  $instances.each | Firebird::FirebirdInstance $instance | {
-    firebird::instance{ "firebird_instance_${instance['version']}":
+  $instances.each | String $instance_name, Firebird::FirebirdInstance $instance | {
+    firebird::instance{ "firebird_instance_${instance_name}":
       * => $instance,
     }
   }

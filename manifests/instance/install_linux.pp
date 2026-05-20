@@ -3,12 +3,30 @@ define firebird::instance::install_linux (
   Stdlib::AbsolutePath $installation_path,
   String[1] $version = $name,
 ) {
-  archive { "/tmp/firebird-${version}.zip":
-    ensure       => present,
-    source       => $source['linux_source'],
-    extract      => true,
-    extract_path => $installation_path,
-    creates      => "${installation_path}/firebird",
-    cleanup      => true,
+  $packages = [
+    'libtommath1',
+    'libtommath-dev',
+  ]
+
+  package { $packages:
+    ensure => installed,
+  }
+  
+  archive { "/tmp/firebird-${version}.tar.gz":
+    ensure          => present,
+    source          => $source['linux_source'],
+    extract         => true,
+    extract_path    => $installation_path,
+    extract_command => 'tar xfz %s --strip-components=1',
+    creates         => "${installation_path}/install.sh",
+    cleanup         => true,
+  }
+
+  exec { "run_firebird_installer_${version}":
+    command     => "${installation_path}/install.sh -silent",
+    cwd         => $installation_path,
+    path        => ['/usr/bin', '/bin'],
+    refreshonly => true,
+    subscribe   => [Archive["/tmp/firebird-${version}.tar.gz"]],
   }
 }

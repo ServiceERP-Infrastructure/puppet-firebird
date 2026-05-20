@@ -69,6 +69,16 @@ define firebird::instance(
       }
     }
     'Debian': {
+      $base_path = '/opt/firebird_installer'
+      $installation_path = "${base_path}/${version}"
+      $full_service_name = "FirebirdServer${service_name}"
+
+      file { $installation_path:
+        ensure => directory,
+        owner  => 'firebird',
+        group  => 'firebird',
+      }
+
       if ($manage_package) {
         firebird::instance::install_linux { $version_name :
           installation_path => $installation_path,
@@ -76,30 +86,10 @@ define firebird::instance(
         }
       }
 
-      if ($manage_service) {
-        systemd::manage_unit { "${version_name}.service":
-          unit_entry    => {
-            'Description' => "Firebird Server ${version}",
-            'After'       => 'network.target',
-          },
-          service_entry => {
-            'User'      => 'firebird',
-            'Group'     => 'firebird',
-            'Type'      => 'forking',
-            'ExecStart' => "${installation_path}/bin/fbguard -daemon -forever",
-          },
-          install_entry => {
-            'WantedBy' => 'multi-user.target',
-          },
-          enable        => true,
-          active        => true,
-        }
-      }
-
       if ($manage_firewall) {
         $rules_version_name = regsubst($version, '.', '_', 'G')
 
-        nftables::simplerule{"wireguard_firebird_${version}":
+        nftables::simplerule{"wireguard_firebird_${rules_version_name}":
           action  => 'accept',
           comment => "allow Firebird (${version_name}) traffic to port ${port}",
           proto   => 'tcp',
