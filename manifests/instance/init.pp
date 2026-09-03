@@ -14,7 +14,7 @@ define firebird::instance::init (
 
   exec { 'execute init sql':
     command     => ['isql', '-user', 'sysdba', '-input', $sql_file_path, 'employee'],
-    path        => [$installation_path],
+    path        => ['/usr/bin', '/bin', "${installation_path}/bin"],
     refreshonly => true,
   }
 }

@@ -25,6 +25,22 @@ class firebird(
       owner  => 'firebird',
       group  => 'firebird',
     }
+
+    $packages = [
+      'libtommath1',
+      'libtommath-dev',
+      'libncurses-dev',
+      'libicu-dev',
+    ]
+
+    package { $packages:
+      ensure => installed,
+    }
+
+    file { '/usr/lib/x86_64-linux-gnu/libtommath.so.0':
+      ensure => link,
+      target => '/usr/lib/x86_64-linux-gnu/libtommath.so.1',
+    }
   }
 
   $instances.each | String $instance_name, Firebird::FirebirdInstance $instance | {

@@ -70,10 +70,12 @@ define firebird::instance(
     }
     'Debian': {
       $base_path = '/opt/firebird_installer'
-      $installation_path = "${base_path}/${version}"
-      $full_service_name = "FirebirdServer${service_name}"
+      $installation_base = '/opt/firebird'
+      $installation_path = "${installation_base}/${version}"
+      $installer_path = "${base_path}/${version}"
+      $full_service_name = "firebird.opt_firebird_${version}-superserver"
 
-      file { $installation_path:
+      file { [$installer_path, $installation_base, $installation_path]:
         ensure => directory,
         owner  => 'firebird',
         group  => 'firebird',
@@ -81,6 +83,7 @@ define firebird::instance(
 
       if ($manage_package) {
         firebird::instance::install_linux { $version_name :
+          installer_path    => $installer_path,
           installation_path => $installation_path,
           source            => $version_source,
         }
@@ -95,6 +98,11 @@ define firebird::instance(
           proto   => 'tcp',
           dport   => $port,
         }
+      }
+
+      service { $full_service_name:
+        ensure => running,
+        enable => true,
       }
     }
     default:  {
