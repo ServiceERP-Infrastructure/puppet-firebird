@@ -5,6 +5,7 @@ define firebird::instance(
   Boolean $manage_firewall = true,
   Boolean $manage_package = true,
   Boolean $manage_service = true,
+  Enum['service', 'container'] $service_type = 'service',
   Hash $config = {},
 ) {
   $version_source = $firebird::version_sources[$version]
@@ -73,7 +74,6 @@ define firebird::instance(
       $installation_base = '/opt/firebird'
       $installation_path = "${installation_base}/${version}"
       $installer_path = "${base_path}/${version}"
-      $full_service_name = "firebird.opt_firebird_${version}-superserver"
 
       file { [$installer_path, $installation_base, $installation_path]:
         ensure => directory,
@@ -81,11 +81,45 @@ define firebird::instance(
         group  => 'firebird',
       }
 
-      if ($manage_package) {
-        firebird::instance::install_linux { $version_name :
-          installer_path    => $installer_path,
-          installation_path => $installation_path,
-          source            => $version_source,
+      if ($service_type == 'service') {
+        $full_service_name = "firebird.opt_firebird_${version}-superserver"
+        if ($manage_package) {
+          firebird::instance::install_linux { $version_name :
+            installer_path    => $installer_path,
+            installation_path => $installation_path,
+            source            => $version_source,
+          }
+        }
+
+        service { $full_service_name:
+          ensure => running,
+          enable => true,
+        }
+      }
+
+      if ($service_type == 'container') {
+        $full_service_name = "firebird-server-${version}"
+        quadlets::quadlet { "${full_service_name}.container":
+          ensure          => present,
+          unit_entry      => {
+            'Description' => "Firebird Server ${version}",
+          },
+          service_entry   => {
+            'TimeoutStartSec' => '900',
+          },
+          container_entry => {
+            'Image'       => $version_source['container_image'],
+            'Environment' => [
+              "FIREBIRD_ROOT_PASSWORD=${initial_password}",
+            ],
+            'Volume'      => [
+              "${installation_path}:/var/lib/firebird/data"
+            ],
+          },
+          install_entry   => {
+            'WantedBy' => 'default.target',
+          },
+          active          => true,
         }
       }
 
@@ -98,11 +132,6 @@ define firebird::instance(
           proto   => 'tcp',
           dport   => $port,
         }
-      }
-
-      service { $full_service_name:
-        ensure => running,
-        enable => true,
       }
     }
     default:  {

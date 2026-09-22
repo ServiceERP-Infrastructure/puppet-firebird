@@ -8,5 +8,6 @@ type Firebird::FirebirdInstance = Struct[
     manage_package   => Optional[Boolean],
     manage_service   => Optional[Boolean],
     config           => Optional[Hash],
+    service_type     => Optional[Enum['service', 'container']],
   }
 ]
